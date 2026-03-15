@@ -1,0 +1,2254 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Movidrill - Interactive IT Learning Platform</title>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Noto+Sans+JP:wght@300;400;500;700&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.8.0/sql-wasm.js"></script>
+<style>
+  :root {
+    --bg-primary: #0a0e17;
+    --bg-secondary: #111827;
+    --bg-tertiary: #1a2235;
+    --bg-card: #151d2e;
+    --bg-hover: #1e2a40;
+    --accent-cyan: #22d3ee;
+    --accent-cyan-dim: rgba(34, 211, 238, 0.15);
+    --accent-green: #34d399;
+    --accent-green-dim: rgba(52, 211, 153, 0.12);
+    --accent-amber: #fbbf24;
+    --accent-amber-dim: rgba(251, 191, 36, 0.12);
+    --accent-rose: #fb7185;
+    --accent-rose-dim: rgba(251, 113, 133, 0.12);
+    --accent-purple: #a78bfa;
+    --accent-purple-dim: rgba(167, 139, 250, 0.12);
+    --accent-blue: #60a5fa;
+    --accent-blue-dim: rgba(96, 165, 250, 0.12);
+    --text-primary: #e2e8f0;
+    --text-secondary: #94a3b8;
+    --text-dim: #64748b;
+    --border: #1e293b;
+    --border-active: #334155;
+    --success: #34d399;
+    --error: #fb7185;
+    --warning: #fbbf24;
+    --radius: 8px;
+    --radius-lg: 12px;
+    --shadow: 0 4px 24px rgba(0,0,0,0.4);
+    --font-mono: 'JetBrains Mono', monospace;
+    --font-sans: 'Noto Sans JP', sans-serif;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  
+  body {
+    font-family: var(--font-sans);
+    background: var(--bg-primary);
+    color: var(--text-primary);
+    overflow: hidden;
+    height: 100vh;
+  }
+
+  /* ===== LAYOUT ===== */
+  .app-container {
+    display: grid;
+    grid-template-columns: 260px 1fr;
+    grid-template-rows: 56px 1fr;
+    height: 100vh;
+  }
+
+  /* ===== TOP BAR ===== */
+  .topbar {
+    grid-column: 1 / -1;
+    background: var(--bg-secondary);
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 24px;
+    z-index: 10;
+  }
+  .topbar-logo {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-family: var(--font-mono);
+    font-weight: 700;
+    font-size: 18px;
+    letter-spacing: -0.5px;
+  }
+  .topbar-logo .logo-icon {
+    width: 32px; height: 32px;
+    background: linear-gradient(135deg, var(--accent-cyan), var(--accent-purple));
+    border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 16px;
+    color: var(--bg-primary);
+    font-weight: 800;
+  }
+  .topbar-logo span:last-child { color: var(--accent-cyan); }
+  .topbar-right {
+    display: flex; align-items: center; gap: 16px;
+  }
+  .topbar-badge {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    padding: 4px 10px;
+    border-radius: 20px;
+    background: var(--accent-cyan-dim);
+    color: var(--accent-cyan);
+    border: 1px solid rgba(34, 211, 238, 0.25);
+  }
+  .topbar-user {
+    width: 32px; height: 32px;
+    border-radius: 50%;
+    background: var(--bg-tertiary);
+    border: 2px solid var(--border-active);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 13px; color: var(--text-secondary);
+    cursor: pointer;
+  }
+
+  /* ===== SIDEBAR ===== */
+  .sidebar {
+    background: var(--bg-secondary);
+    border-right: 1px solid var(--border);
+    overflow-y: auto;
+    padding: 16px 12px;
+  }
+  .sidebar-section-label {
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    color: var(--text-dim);
+    padding: 12px 12px 8px;
+  }
+  .sidebar-item {
+    display: flex; align-items: center; gap: 12px;
+    padding: 10px 12px;
+    border-radius: var(--radius);
+    cursor: pointer;
+    transition: all 0.2s;
+    margin-bottom: 2px;
+    position: relative;
+  }
+  .sidebar-item:hover { background: var(--bg-hover); }
+  .sidebar-item.active {
+    background: var(--accent-cyan-dim);
+    border: 1px solid rgba(34, 211, 238, 0.2);
+  }
+  .sidebar-item.active .sidebar-item-name { color: var(--accent-cyan); }
+  .sidebar-item.disabled { opacity: 0.4; cursor: default; }
+  .sidebar-item.disabled:hover { background: transparent; }
+  .sidebar-item-icon {
+    width: 36px; height: 36px;
+    border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 16px;
+    flex-shrink: 0;
+  }
+  .sidebar-item-text { flex: 1; min-width: 0; }
+  .sidebar-item-name {
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text-primary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .sidebar-item-desc {
+    font-size: 10px;
+    color: var(--text-dim);
+    margin-top: 1px;
+  }
+  .sidebar-item .coming-soon {
+    font-family: var(--font-mono);
+    font-size: 9px;
+    padding: 2px 6px;
+    border-radius: 4px;
+    background: var(--bg-tertiary);
+    color: var(--text-dim);
+    border: 1px solid var(--border);
+    white-space: nowrap;
+  }
+
+  /* ===== MAIN CONTENT ===== */
+  .main-content {
+    overflow-y: auto;
+    background: var(--bg-primary);
+  }
+
+  /* ===== DASHBOARD ===== */
+  .dashboard {
+    padding: 32px;
+    max-width: 1200px;
+    margin: 0 auto;
+    animation: fadeIn 0.4s ease;
+  }
+  .dashboard h1 {
+    font-family: var(--font-mono);
+    font-size: 28px;
+    font-weight: 700;
+    margin-bottom: 4px;
+  }
+  .dashboard h1 span { color: var(--accent-cyan); }
+  .dashboard-sub {
+    color: var(--text-secondary);
+    font-size: 14px;
+    margin-bottom: 32px;
+  }
+  .stats-row {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 16px;
+    margin-bottom: 32px;
+  }
+  .stat-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 20px;
+    transition: all 0.25s;
+  }
+  .stat-card:hover {
+    border-color: var(--border-active);
+    transform: translateY(-2px);
+    box-shadow: var(--shadow);
+  }
+  .stat-label { font-size: 12px; color: var(--text-dim); margin-bottom: 8px; }
+  .stat-value {
+    font-family: var(--font-mono);
+    font-size: 28px;
+    font-weight: 700;
+  }
+  .stat-sub { font-size: 11px; color: var(--text-dim); margin-top: 4px; }
+  .module-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 16px;
+  }
+  .module-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 24px;
+    cursor: pointer;
+    transition: all 0.3s;
+    position: relative;
+    overflow: hidden;
+  }
+  .module-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 3px;
+    background: var(--card-accent);
+    opacity: 0;
+    transition: opacity 0.3s;
+  }
+  .module-card:hover {
+    border-color: var(--border-active);
+    transform: translateY(-3px);
+    box-shadow: var(--shadow);
+  }
+  .module-card:hover::before { opacity: 1; }
+  .module-card.disabled {
+    opacity: 0.5;
+    cursor: default;
+  }
+  .module-card.disabled:hover {
+    transform: none;
+    box-shadow: none;
+  }
+  .module-card-icon {
+    width: 48px; height: 48px;
+    border-radius: 12px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 22px;
+    margin-bottom: 16px;
+  }
+  .module-card-title {
+    font-family: var(--font-mono);
+    font-size: 16px;
+    font-weight: 600;
+    margin-bottom: 6px;
+  }
+  .module-card-desc {
+    font-size: 13px;
+    color: var(--text-secondary);
+    line-height: 1.5;
+    margin-bottom: 16px;
+  }
+  .module-card-footer {
+    display: flex; justify-content: space-between; align-items: center;
+  }
+  .module-card-tag {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    padding: 3px 8px;
+    border-radius: 4px;
+  }
+
+  /* ===== LESSON VIEW ===== */
+  .lesson-view {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    grid-template-rows: auto 1fr;
+    height: calc(100vh - 56px);
+    animation: fadeIn 0.4s ease;
+  }
+  .lesson-header {
+    grid-column: 1 / -1;
+    padding: 16px 24px;
+    background: var(--bg-secondary);
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .lesson-header-left {
+    display: flex; align-items: center; gap: 16px;
+  }
+  .btn-back {
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border);
+    color: var(--text-secondary);
+    padding: 6px 14px;
+    border-radius: var(--radius);
+    cursor: pointer;
+    font-size: 13px;
+    font-family: var(--font-sans);
+    transition: all 0.2s;
+    display: flex; align-items: center; gap: 6px;
+  }
+  .btn-back:hover { background: var(--bg-hover); color: var(--text-primary); }
+  .lesson-title-area h2 {
+    font-family: var(--font-mono);
+    font-size: 16px;
+    font-weight: 600;
+  }
+  .lesson-title-area p {
+    font-size: 12px;
+    color: var(--text-dim);
+    margin-top: 2px;
+  }
+  .step-indicator {
+    display: flex; align-items: center; gap: 8px;
+  }
+  .step-dot {
+    width: 28px; height: 28px;
+    border-radius: 50%;
+    background: var(--bg-tertiary);
+    border: 2px solid var(--border);
+    display: flex; align-items: center; justify-content: center;
+    font-family: var(--font-mono);
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--text-dim);
+    transition: all 0.3s;
+  }
+  .step-dot.completed {
+    background: var(--accent-green-dim);
+    border-color: var(--accent-green);
+    color: var(--accent-green);
+  }
+  .step-dot.active {
+    background: var(--accent-cyan-dim);
+    border-color: var(--accent-cyan);
+    color: var(--accent-cyan);
+    box-shadow: 0 0 12px rgba(34, 211, 238, 0.3);
+  }
+  .step-line {
+    width: 20px; height: 2px;
+    background: var(--border);
+    border-radius: 1px;
+  }
+  .step-line.completed { background: var(--accent-green); }
+
+  /* Video Panel */
+  .video-panel {
+    border-right: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+  .video-container {
+    width: 100%;
+    aspect-ratio: 16/9;
+    background: #000;
+    position: relative;
+    flex-shrink: 0;
+  }
+  .video-container iframe {
+    width: 100%;
+    height: 100%;
+    border: none;
+  }
+  .video-placeholder {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(135deg, #0f1724, #1a1f3a);
+    color: var(--text-dim);
+    gap: 12px;
+  }
+  .video-placeholder-icon { font-size: 48px; opacity: 0.5; }
+  .video-placeholder-text { font-size: 13px; }
+
+  .info-panel {
+    flex: 1;
+    overflow-y: auto;
+    padding: 20px;
+  }
+  .info-section {
+    margin-bottom: 20px;
+  }
+  .info-section-title {
+    font-family: var(--font-mono);
+    font-size: 12px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: var(--text-dim);
+    margin-bottom: 12px;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .info-section-title::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: var(--border);
+  }
+
+  /* ER Diagram */
+  .er-diagram {
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 16px;
+    overflow-x: auto;
+  }
+  .er-table {
+    display: inline-block;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    min-width: 160px;
+    margin: 8px;
+    vertical-align: top;
+  }
+  .er-table-header {
+    font-family: var(--font-mono);
+    font-size: 12px;
+    font-weight: 600;
+    padding: 8px 12px;
+    background: var(--accent-cyan-dim);
+    color: var(--accent-cyan);
+    border-bottom: 1px solid var(--border);
+    border-radius: var(--radius) var(--radius) 0 0;
+  }
+  .er-table-row {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    padding: 5px 12px;
+    color: var(--text-secondary);
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    border-bottom: 1px solid rgba(30,41,59,0.5);
+  }
+  .er-table-row:last-child { border-bottom: none; }
+  .er-col-name { color: var(--text-primary); }
+  .er-col-type { color: var(--text-dim); font-size: 10px; }
+  .er-pk { color: var(--accent-amber); }
+
+  /* Task Card */
+  .task-card {
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 16px;
+  }
+  .task-card h4 {
+    font-size: 14px;
+    font-weight: 500;
+    margin-bottom: 8px;
+    color: var(--text-primary);
+  }
+  .task-card p {
+    font-size: 13px;
+    color: var(--text-secondary);
+    line-height: 1.6;
+  }
+  .task-hint {
+    font-family: var(--font-mono);
+    font-size: 12px;
+    color: var(--accent-amber);
+    background: var(--accent-amber-dim);
+    padding: 8px 12px;
+    border-radius: var(--radius);
+    margin-top: 10px;
+    border-left: 3px solid var(--accent-amber);
+  }
+
+  /* Editor Panel */
+  .editor-panel {
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+  .editor-toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 16px;
+    background: var(--bg-secondary);
+    border-bottom: 1px solid var(--border);
+  }
+  .editor-toolbar-left {
+    display: flex; align-items: center; gap: 8px;
+    font-family: var(--font-mono);
+    font-size: 12px;
+    color: var(--text-dim);
+  }
+  .editor-toolbar-dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    background: var(--accent-green);
+  }
+  .editor-area {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+  }
+  .sql-editor {
+    flex: 1;
+    min-height: 160px;
+    background: var(--bg-primary);
+    border: none;
+    color: var(--accent-cyan);
+    font-family: var(--font-mono);
+    font-size: 14px;
+    line-height: 1.7;
+    padding: 20px;
+    resize: none;
+    outline: none;
+    tab-size: 2;
+  }
+  .sql-editor::placeholder { color: var(--text-dim); }
+  .editor-actions {
+    padding: 12px 16px;
+    display: flex;
+    gap: 10px;
+    background: var(--bg-secondary);
+    border-top: 1px solid var(--border);
+  }
+  .btn {
+    font-family: var(--font-mono);
+    font-size: 13px;
+    font-weight: 500;
+    padding: 8px 20px;
+    border-radius: var(--radius);
+    border: none;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .btn-primary {
+    background: var(--accent-cyan);
+    color: var(--bg-primary);
+  }
+  .btn-primary:hover {
+    background: #06b6d4;
+    box-shadow: 0 0 20px rgba(34, 211, 238, 0.3);
+  }
+  .btn-secondary {
+    background: var(--bg-tertiary);
+    color: var(--text-secondary);
+    border: 1px solid var(--border);
+  }
+  .btn-secondary:hover { background: var(--bg-hover); color: var(--text-primary); }
+  .btn-success {
+    background: var(--accent-green);
+    color: var(--bg-primary);
+  }
+  .btn-success:hover { box-shadow: 0 0 20px rgba(52, 211, 153, 0.3); }
+
+  /* Results Panel */
+  .results-panel {
+    flex: 1;
+    overflow: auto;
+    background: var(--bg-primary);
+    border-top: 1px solid var(--border);
+  }
+  .results-header {
+    padding: 10px 16px;
+    font-family: var(--font-mono);
+    font-size: 12px;
+    color: var(--text-dim);
+    background: var(--bg-secondary);
+    border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .results-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-family: var(--font-mono);
+    font-size: 12px;
+  }
+  .results-table th {
+    background: var(--bg-tertiary);
+    color: var(--accent-cyan);
+    font-weight: 600;
+    padding: 8px 14px;
+    text-align: left;
+    position: sticky;
+    top: 0;
+    border-bottom: 1px solid var(--border);
+  }
+  .results-table td {
+    padding: 7px 14px;
+    color: var(--text-secondary);
+    border-bottom: 1px solid rgba(30,41,59,0.3);
+  }
+  .results-table tr:hover td { background: var(--bg-hover); }
+
+  /* Feedback */
+  .feedback {
+    padding: 12px 16px;
+    font-size: 13px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    border-top: 1px solid var(--border);
+  }
+  .feedback.success {
+    background: var(--accent-green-dim);
+    color: var(--accent-green);
+    border-top-color: rgba(52, 211, 153, 0.3);
+  }
+  .feedback.error {
+    background: var(--accent-rose-dim);
+    color: var(--accent-rose);
+    border-top-color: rgba(251, 113, 133, 0.3);
+  }
+  .feedback.info {
+    background: var(--accent-blue-dim);
+    color: var(--accent-blue);
+  }
+
+  /* Expected Results */
+  .expected-panel {
+    margin-top: 12px;
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    overflow: hidden;
+  }
+  .expected-header {
+    padding: 8px 12px;
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--accent-amber);
+    background: var(--accent-amber-dim);
+    border-bottom: 1px solid var(--border);
+  }
+
+  /* APISync */
+  .api-spec-card {
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 12px 16px;
+  }
+  .api-spec-row {
+    font-family: var(--font-mono);
+    font-size: 12px;
+    padding: 6px 0;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .api-spec-label {
+    color: var(--text-dim);
+    min-width: 100px;
+  }
+  .api-spec-row code {
+    color: var(--accent-amber);
+    background: var(--bg-primary);
+    padding: 2px 8px;
+    border-radius: 4px;
+  }
+  .api-request-form {
+    padding: 12px 16px;
+    background: var(--bg-secondary);
+    border-top: 1px solid var(--border);
+  }
+  .api-request-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 10px;
+  }
+  .api-request-row:last-child { margin-bottom: 0; }
+  .api-request-form select {
+    font-family: var(--font-mono);
+    font-size: 13px;
+    padding: 8px 12px;
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    color: var(--text-primary);
+    min-width: 100px;
+  }
+  .api-path-input {
+    flex: 1;
+    font-family: var(--font-mono);
+    font-size: 13px;
+    padding: 8px 12px;
+    background: var(--bg-primary);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    color: var(--text-primary);
+  }
+  .api-body-row { flex-direction: column; align-items: stretch; }
+  .api-body-label {
+    font-size: 11px;
+    color: var(--text-dim);
+    margin-bottom: 4px;
+  }
+  .api-body-input {
+    min-height: 60px;
+    font-family: var(--font-mono);
+    font-size: 12px;
+    padding: 10px;
+    background: var(--bg-primary);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    color: var(--text-secondary);
+    resize: vertical;
+  }
+  .api-response-status {
+    font-family: var(--font-mono);
+    font-size: 13px;
+    font-weight: 600;
+    padding: 10px 16px;
+    background: var(--bg-tertiary);
+    border-bottom: 1px solid var(--border);
+    color: var(--accent-cyan);
+  }
+  .api-response-body {
+    margin: 0;
+    padding: 16px;
+    font-family: var(--font-mono);
+    font-size: 12px;
+    color: var(--text-secondary);
+    white-space: pre-wrap;
+    word-break: break-all;
+  }
+  .api-yaml-editor { min-height: 120px; }
+
+  /* Scrollbar */
+  ::-webkit-scrollbar { width: 6px; height: 6px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--border-active); border-radius: 3px; }
+  ::-webkit-scrollbar-thumb:hover { background: var(--text-dim); }
+
+  /* Animations */
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(8px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.5; }
+  }
+  .animate-pulse { animation: pulse 2s ease-in-out infinite; }
+
+  /* Responsive */
+  @media (max-width: 1024px) {
+    .app-container { grid-template-columns: 1fr; }
+    .sidebar { display: none; }
+    .lesson-view { grid-template-columns: 1fr; }
+    .video-panel { max-height: 45vh; }
+  }
+</style>
+</head>
+<body>
+
+<div class="app-container" id="app">
+  <!-- Top Bar -->
+  <div class="topbar">
+    <div class="topbar-logo">
+      <div class="logo-icon">⚡</div>
+      <span>Movi</span><span>drill</span>
+    </div>
+    <div class="topbar-right">
+      <div class="topbar-badge">PROTOTYPE v0.1</div>
+      <div class="topbar-user">👤</div>
+    </div>
+  </div>
+
+  <!-- Sidebar -->
+  <div class="sidebar" id="sidebar"></div>
+
+  <!-- Main Content -->
+  <div class="main-content" id="main-content"></div>
+</div>
+
+<script>
+// ============================================================
+// Movidrill Platform - Core Architecture
+// ============================================================
+
+// --- Module Registry (プラットフォーム拡張の核) ---
+const MODULE_REGISTRY = [
+  {
+    id: 'querysync',
+    name: 'QuerySync',
+    subtitle: 'SQL学習',
+    icon: '🗄️',
+    color: 'var(--accent-cyan)',
+    bgColor: 'var(--accent-cyan-dim)',
+    description: 'SQL動画×インタラクティブエディタ。動画と連動してクエリを書き、即座にフィードバック。',
+    status: 'active',
+    difficulty: '初級〜中級',
+    lessons: 5
+  },
+  {
+    id: 'infraplay',
+    name: 'InfraPlay',
+    subtitle: 'インフラ構築',
+    icon: '🖥️',
+    color: 'var(--accent-green)',
+    bgColor: 'var(--accent-green-dim)',
+    description: 'サーバー構築動画×仮想ターミナル×アーキテクチャ図のリアルタイム連動。',
+    status: 'coming',
+    difficulty: '中級',
+    lessons: 0
+  },
+  {
+    id: 'netmap',
+    name: 'NetMap',
+    subtitle: 'ネットワーク',
+    icon: '🌐',
+    color: 'var(--accent-purple)',
+    bgColor: 'var(--accent-purple-dim)',
+    description: 'パケットの流れをトポロジ図上でアニメーション。ルーティング編集＆シミュレーション。',
+    status: 'coming',
+    difficulty: '中級〜上級',
+    lessons: 0
+  },
+  {
+    id: 'containersync',
+    name: 'ContainerSync',
+    subtitle: 'Docker / K8s',
+    icon: '🐳',
+    color: 'var(--accent-blue)',
+    bgColor: 'var(--accent-blue-dim)',
+    description: 'コンテナ技術動画×状態可視化パネル。yaml編集でPod/Serviceを動的図解。',
+    status: 'coming',
+    difficulty: '中級',
+    lessons: 0
+  },
+  {
+    id: 'hacklab',
+    name: 'HackLab',
+    subtitle: 'セキュリティ',
+    icon: '🔐',
+    color: 'var(--accent-rose)',
+    bgColor: 'var(--accent-rose-dim)',
+    description: 'セキュリティ動画×仮想攻防演習。脆弱性の発見から防御コード実装まで一体型。',
+    status: 'coming',
+    difficulty: '上級',
+    lessons: 0
+  },
+  {
+    id: 'apisync',
+    name: 'APISync',
+    subtitle: 'API設計',
+    icon: '🔌',
+    color: 'var(--accent-amber)',
+    bgColor: 'var(--accent-amber-dim)',
+    description: 'API設計動画×OpenAPIエディタ×リクエストテスター。設計から動作確認まで同期。',
+    status: 'active',
+    difficulty: '初級〜中級',
+    lessons: 2
+  },
+  {
+    id: 'pipesync',
+    name: 'PipeSync',
+    subtitle: 'CI/CD',
+    icon: '⚙️',
+    color: 'var(--accent-green)',
+    bgColor: 'var(--accent-green-dim)',
+    description: 'CI/CD動画×パイプラインフローチャート。ステージ追加をリアルタイム図解。',
+    status: 'coming',
+    difficulty: '中級',
+    lessons: 0
+  },
+  {
+    id: 'designsync',
+    name: 'DesignSync',
+    subtitle: 'システム設計',
+    icon: '📐',
+    color: 'var(--accent-purple)',
+    bgColor: 'var(--accent-purple-dim)',
+    description: 'システム設計動画×インタラクティブキャンバス。模範設計と比較しながら学習。',
+    status: 'coming',
+    difficulty: '上級',
+    lessons: 0
+  }
+];
+
+// --- QuerySync: Lesson Data ---
+const QUERYSYNC_LESSONS = [
+  {
+    id: 'qs-lesson-1',
+    title: 'SELECT文の基本',
+    description: 'テーブルからデータを取得する基本操作を学ぶ',
+    videoId: 'dQw4w9WgXcQ', // プレースホルダー - 自分の動画IDに置換
+    tables: {
+      employees: {
+        name: 'employees',
+        columns: [
+          { name: 'id', type: 'INTEGER', pk: true },
+          { name: 'name', type: 'TEXT' },
+          { name: 'department', type: 'TEXT' },
+          { name: 'salary', type: 'INTEGER' },
+          { name: 'hire_date', type: 'TEXT' }
+        ],
+        data: [
+          [1, '田中太郎', '開発部', 550000, '2020-04-01'],
+          [2, '佐藤花子', '営業部', 480000, '2019-06-15'],
+          [3, '鈴木一郎', '開発部', 620000, '2018-01-10'],
+          [4, '高橋美咲', 'デザイン部', 510000, '2021-03-01'],
+          [5, '伊藤健太', '営業部', 450000, '2022-07-20'],
+          [6, '渡辺由紀', '開発部', 580000, '2019-11-05'],
+          [7, '山本直樹', 'デザイン部', 490000, '2020-09-12'],
+          [8, '中村恵子', '人事部', 520000, '2017-04-01']
+        ]
+      }
+    },
+    steps: [
+      {
+        id: 1,
+        title: '全データの取得',
+        instruction: 'employeesテーブルの全カラム・全行を取得してください。',
+        hint: 'SELECT * FROM ... を使います',
+        videoTimestamp: 0,
+        expectedQuery: 'SELECT * FROM employees',
+        expectedSummary: '8行が返ること（全カラム・全行）',
+        validate: (results) => results && results.length === 8
+      },
+      {
+        id: 2,
+        title: 'カラム指定の取得',
+        instruction: 'employeesテーブルから name と department だけを取得してください。',
+        hint: 'SELECT カラム名, カラム名 FROM ...',
+        videoTimestamp: 60,
+        expectedQuery: 'SELECT name, department FROM employees',
+        expectedSummary: 'name, department の2列・8行',
+        validate: (results, columns) => columns && columns.length === 2 && results && results.length === 8
+      },
+      {
+        id: 3,
+        title: 'WHERE句によるフィルタ',
+        instruction: '開発部のメンバーだけを全カラム取得してください。',
+        hint: "WHERE department = '開発部'",
+        videoTimestamp: 120,
+        expectedQuery: "SELECT * FROM employees WHERE department = '開発部'",
+        expectedSummary: '3行（開発部のみ）・全カラム',
+        validate: (results) => results && results.length === 3 && results.every(r => r[2] === '開発部')
+      },
+      {
+        id: 4,
+        title: 'ORDER BYでソート',
+        instruction: '全メンバーを給与の高い順に並べてください（全カラム）。',
+        hint: 'ORDER BY salary DESC',
+        videoTimestamp: 180,
+        expectedQuery: 'SELECT * FROM employees ORDER BY salary DESC',
+        expectedSummary: '8行・給与の降順に並んでいること',
+        validate: (results) => {
+          if (!results || results.length !== 8) return false;
+          for (let i = 0; i < results.length - 1; i++) {
+            if (results[i][3] < results[i + 1][3]) return false;
+          }
+          return true;
+        }
+      },
+      {
+        id: 5,
+        title: '集計関数',
+        instruction: '部署ごとの平均給与を求めてください。department と平均給与を出力します。',
+        hint: 'SELECT department, AVG(salary) FROM ... GROUP BY ...',
+        videoTimestamp: 240,
+        expectedQuery: 'SELECT department, AVG(salary) FROM employees GROUP BY department',
+        expectedSummary: '4行（部署ごと）・department と平均給与の2列',
+        validate: (results, columns) => results && results.length === 4 && columns && columns.length === 2
+      }
+    ]
+  },
+  // --- Lesson 2: JOIN ---
+  {
+    id: 'qs-lesson-2',
+    title: 'JOIN（複数テーブルの結合）',
+    description: '複数テーブルを結合して、関連するデータを一度に取得する方法を学ぶ',
+    videoId: 'dQw4w9WgXcQ',
+    tables: {
+      departments: {
+        name: 'departments',
+        columns: [
+          { name: 'id', type: 'INTEGER', pk: true },
+          { name: 'name', type: 'TEXT' }
+        ],
+        data: [
+          [1, '開発部'],
+          [2, '営業部'],
+          [3, 'デザイン部'],
+          [4, '人事部']
+        ]
+      },
+      staff: {
+        name: 'staff',
+        columns: [
+          { name: 'id', type: 'INTEGER', pk: true },
+          { name: 'name', type: 'TEXT' },
+          { name: 'department_id', type: 'INTEGER' },
+          { name: 'salary', type: 'INTEGER' },
+          { name: 'hire_date', type: 'TEXT' }
+        ],
+        data: [
+          [1, '田中太郎', 1, 550000, '2020-04-01'],
+          [2, '佐藤花子', 2, 480000, '2019-06-15'],
+          [3, '鈴木一郎', 1, 620000, '2018-01-10'],
+          [4, '高橋美咲', 3, 510000, '2021-03-01'],
+          [5, '伊藤健太', 2, 450000, '2022-07-20'],
+          [6, '渡辺由紀', 1, 580000, '2019-11-05'],
+          [7, '山本直樹', 3, 490000, '2020-09-12'],
+          [8, '中村恵子', 4, 520000, '2017-04-01']
+        ]
+      }
+    },
+    steps: [
+      {
+        id: 1,
+        title: 'テーブル確認（staff）',
+        instruction: 'staffテーブルの全カラム・全行を取得してください。',
+        hint: 'SELECT * FROM staff',
+        videoTimestamp: 0,
+        expectedQuery: 'SELECT * FROM staff',
+        expectedSummary: '8行が返ること（id, name, department_id, salary, hire_date）',
+        validate: (results) => results && results.length === 8
+      },
+      {
+        id: 2,
+        title: 'INNER JOINの基本',
+        instruction: 'staff と departments を INNER JOIN し、社員名（staff.name）と部署名（departments.name）を取得してください。結合条件は staff.department_id = departments.id です。',
+        hint: 'SELECT staff.name, departments.name FROM staff INNER JOIN departments ON ...',
+        videoTimestamp: 60,
+        expectedQuery: 'SELECT staff.name, departments.name FROM staff INNER JOIN departments ON staff.department_id = departments.id',
+        expectedSummary: '8行・社員名と部署名の2列',
+        validate: (results, columns) => results && results.length === 8 && columns && columns.length === 2
+      },
+      {
+        id: 3,
+        title: 'JOINとWHEREの組み合わせ',
+        instruction: 'INNER JOIN で「開発部」の社員の名前だけを取得してください。部署名で絞り込みます。',
+        hint: "JOIN の後に WHERE departments.name = '開発部'",
+        videoTimestamp: 120,
+        expectedQuery: "SELECT staff.name FROM staff INNER JOIN departments ON staff.department_id = departments.id WHERE departments.name = '開発部'",
+        expectedSummary: '3行・開発部の社員名のみ',
+        validate: (results) => results && results.length === 3
+      },
+      {
+        id: 4,
+        title: 'LEFT JOIN',
+        instruction: 'staff を LEFT JOIN で departments と結合し、社員名と部署名を取得してください。部署に紐づかない社員も含めます。',
+        hint: 'LEFT JOIN を使うと、右側に一致がない行も残ります',
+        videoTimestamp: 180,
+        expectedQuery: 'SELECT staff.name, departments.name FROM staff LEFT JOIN departments ON staff.department_id = departments.id',
+        expectedSummary: '8行・社員名と部署名（全社員が部署に紐づくので8行）',
+        validate: (results, columns) => results && results.length === 8 && columns && columns.length === 2
+      },
+      {
+        id: 5,
+        title: 'JOIN結果のソート',
+        instruction: 'staff と departments を INNER JOIN し、社員名・部署名・給与の3列を取得し、給与の高い順に並べてください。',
+        hint: 'SELECT ... JOIN ... ORDER BY salary DESC',
+        videoTimestamp: 240,
+        expectedQuery: 'SELECT staff.name, departments.name, staff.salary FROM staff INNER JOIN departments ON staff.department_id = departments.id ORDER BY staff.salary DESC',
+        expectedSummary: '8行・給与の降順',
+        validate: (results, columns) => {
+          if (!results || results.length !== 8 || !columns || columns.length !== 3) return false;
+          for (let i = 0; i < results.length - 1; i++) {
+            if (results[i][2] < results[i + 1][2]) return false;
+          }
+          return true;
+        }
+      }
+    ]
+  },
+  // --- Lesson 3: サブクエリ・集計の応用 ---
+  {
+    id: 'qs-lesson-3',
+    title: 'サブクエリ・集計の応用',
+    description: 'サブクエリとHAVING句を使った条件付き集計を学ぶ',
+    videoId: 'dQw4w9WgXcQ',
+    tables: {
+      employees: {
+        name: 'employees',
+        columns: [
+          { name: 'id', type: 'INTEGER', pk: true },
+          { name: 'name', type: 'TEXT' },
+          { name: 'department', type: 'TEXT' },
+          { name: 'salary', type: 'INTEGER' },
+          { name: 'hire_date', type: 'TEXT' }
+        ],
+        data: [
+          [1, '田中太郎', '開発部', 550000, '2020-04-01'],
+          [2, '佐藤花子', '営業部', 480000, '2019-06-15'],
+          [3, '鈴木一郎', '開発部', 620000, '2018-01-10'],
+          [4, '高橋美咲', 'デザイン部', 510000, '2021-03-01'],
+          [5, '伊藤健太', '営業部', 450000, '2022-07-20'],
+          [6, '渡辺由紀', '開発部', 580000, '2019-11-05'],
+          [7, '山本直樹', 'デザイン部', 490000, '2020-09-12'],
+          [8, '中村恵子', '人事部', 520000, '2017-04-01']
+        ]
+      }
+    },
+    steps: [
+      {
+        id: 1,
+        title: '集計関数 COUNT',
+        instruction: 'employeesテーブルの総人数（行数）を求めてください。結果は1行1列で構いません。',
+        hint: 'SELECT COUNT(*) FROM employees',
+        videoTimestamp: 0,
+        expectedQuery: 'SELECT COUNT(*) FROM employees',
+        expectedSummary: '1行・人数の合計（8）',
+        validate: (results) => results && results.length === 1 && Number(results[0][0]) === 8
+      },
+      {
+        id: 2,
+        title: '部署ごとの人数',
+        instruction: '部署（department）ごとの人数を求めてください。department と人数の2列を出力します。',
+        hint: 'SELECT department, COUNT(*) FROM employees GROUP BY department',
+        videoTimestamp: 60,
+        expectedQuery: 'SELECT department, COUNT(*) FROM employees GROUP BY department',
+        expectedSummary: '4行・部署名と人数',
+        validate: (results, columns) => results && results.length === 4 && columns && columns.length === 2
+      },
+      {
+        id: 3,
+        title: 'HAVINGで集計結果を絞る',
+        instruction: '人数が2人以上の部署だけを表示してください。department と人数の2列です。',
+        hint: 'GROUP BY の後に HAVING COUNT(*) >= 2',
+        videoTimestamp: 120,
+        expectedQuery: 'SELECT department, COUNT(*) FROM employees GROUP BY department HAVING COUNT(*) >= 2',
+        expectedSummary: '3行・人数が2人以上の部署のみ（開発部3人、営業部2人、デザイン部2人）',
+        validate: (results) => results && results.length === 3 && results.every(r => Number(r[1]) >= 2)
+      },
+      {
+        id: 4,
+        title: 'サブクエリ（平均以上の給与）',
+        instruction: '全社員の平均給与以上の給与をもらっている社員の name と salary を取得してください。',
+        hint: 'WHERE salary >= (SELECT AVG(salary) FROM employees)',
+        videoTimestamp: 180,
+        expectedQuery: 'SELECT name, salary FROM employees WHERE salary >= (SELECT AVG(salary) FROM employees)',
+        expectedSummary: '平均給与（525000）以上の社員のみ・5人',
+        validate: (results, columns) => {
+          if (!results || !columns || columns.length !== 2) return false;
+          const avg = 525000;
+          return results.length === 5 && results.every(r => Number(r[1]) >= avg - 1000);
+        }
+      },
+      {
+        id: 5,
+        title: 'MAXとサブクエリ',
+        instruction: '最高給与の社員の name と salary を取得してください。',
+        hint: 'WHERE salary = (SELECT MAX(salary) FROM employees)',
+        videoTimestamp: 240,
+        expectedQuery: 'SELECT name, salary FROM employees WHERE salary = (SELECT MAX(salary) FROM employees)',
+        expectedSummary: '1行・最高給与の社員（鈴木一郎, 620000）',
+        validate: (results) => results && results.length === 1 && Number(results[0][1]) === 620000
+      }
+    ]
+  },
+  // --- Lesson 4: DDL（CREATE TABLE / ALTER）---
+  {
+    id: 'qs-lesson-4',
+    title: 'DDL — テーブルの作成と変更',
+    description: 'CREATE TABLE と ALTER TABLE でテーブルを定義・変更する方法を学ぶ',
+    videoId: 'dQw4w9WgXcQ',
+    tables: {},
+    steps: [
+      {
+        id: 1,
+        title: 'CREATE TABLE でテーブル作成',
+        instruction: 'products テーブルを作成してください。カラムは id（INTEGER, 主キー）、name（TEXT）とします。',
+        hint: 'CREATE TABLE products (id INTEGER PRIMARY KEY, name TEXT)',
+        videoTimestamp: 0,
+        expectedQuery: 'CREATE TABLE products (id INTEGER PRIMARY KEY, name TEXT)',
+        expectedSummary: 'products テーブルが作成されること',
+        validate: (results, columns, sql) => sql && /CREATE\s+TABLE\s+products\s*\(/i.test(sql) && /id.*INTEGER/i.test(sql) && /name.*TEXT/i.test(sql)
+      },
+      {
+        id: 2,
+        title: 'ALTER TABLE でカラム追加',
+        instruction: 'products テーブルに price（INTEGER）カラムを追加してください。',
+        hint: 'ALTER TABLE products ADD COLUMN price INTEGER',
+        videoTimestamp: 60,
+        expectedQuery: 'ALTER TABLE products ADD COLUMN price INTEGER',
+        expectedSummary: 'price カラムが追加されること',
+        validate: (results, columns, sql) => sql && /ALTER\s+TABLE\s+products/i.test(sql) && /ADD\s+COLUMN\s+price/i.test(sql)
+      },
+      {
+        id: 3,
+        title: 'INSERT でデータ投入',
+        instruction: 'products テーブルに1件データを挿入してください。id=1, name=りんご, price=100 とします。',
+        hint: 'INSERT INTO products (id, name, price) VALUES (1, \'りんご\', 100)',
+        videoTimestamp: 120,
+        expectedQuery: 'INSERT INTO products (id, name, price) VALUES (1, \'りんご\', 100)',
+        expectedSummary: '1行が挿入されること',
+        validate: (results, columns, sql) => sql && /INSERT\s+INTO\s+products/i.test(sql)
+      },
+      {
+        id: 4,
+        title: 'テーブル内容の確認',
+        instruction: 'products テーブルの全データを取得してください。',
+        hint: 'SELECT * FROM products',
+        videoTimestamp: 180,
+        expectedQuery: 'SELECT * FROM products',
+        expectedSummary: '1行以上（id, name, price の3列）',
+        validate: (results, columns) => results && results.length >= 1 && columns && columns.length >= 3
+      }
+    ]
+  },
+  // --- Lesson 5: EXPLAIN（パフォーマンス）---
+  {
+    id: 'qs-lesson-5',
+    title: 'EXPLAIN — クエリの実行計画',
+    description: 'EXPLAIN でクエリの実行計画を確認し、読み方を学ぶ',
+    videoId: 'dQw4w9WgXcQ',
+    tables: {
+      employees: {
+        name: 'employees',
+        columns: [
+          { name: 'id', type: 'INTEGER', pk: true },
+          { name: 'name', type: 'TEXT' },
+          { name: 'department', type: 'TEXT' },
+          { name: 'salary', type: 'INTEGER' },
+          { name: 'hire_date', type: 'TEXT' }
+        ],
+        data: [
+          [1, '田中太郎', '開発部', 550000, '2020-04-01'],
+          [2, '佐藤花子', '営業部', 480000, '2019-06-15'],
+          [3, '鈴木一郎', '開発部', 620000, '2018-01-10'],
+          [4, '高橋美咲', 'デザイン部', 510000, '2021-03-01'],
+          [5, '伊藤健太', '営業部', 450000, '2022-07-20'],
+          [6, '渡辺由紀', '開発部', 580000, '2019-11-05'],
+          [7, '山本直樹', 'デザイン部', 490000, '2020-09-12'],
+          [8, '中村恵子', '人事部', 520000, '2017-04-01']
+        ]
+      }
+    },
+    steps: [
+      {
+        id: 1,
+        title: 'EXPLAIN の基本',
+        instruction: 'SELECT * FROM employees の実行計画を EXPLAIN で確認してください。',
+        hint: 'EXPLAIN QUERY PLAN SELECT * FROM employees',
+        videoTimestamp: 0,
+        expectedQuery: 'EXPLAIN QUERY PLAN SELECT * FROM employees',
+        expectedSummary: '実行計画の行が返ること（sql.js では TABLE employees など）',
+        validate: (results, columns, sql) => sql && /EXPLAIN/i.test(sql) && results && results.length >= 1
+      },
+      {
+        id: 2,
+        title: 'WHERE 句ありの実行計画',
+        instruction: 'WHERE department = \'開発部\' を付けた SELECT の実行計画を EXPLAIN で確認してください。',
+        hint: 'EXPLAIN QUERY PLAN SELECT * FROM employees WHERE department = \'開発部\'',
+        videoTimestamp: 60,
+        expectedQuery: "EXPLAIN QUERY PLAN SELECT * FROM employees WHERE department = '開発部'",
+        expectedSummary: 'フィルタ条件付きの実行計画が返ること',
+        validate: (results, columns, sql) => sql && /EXPLAIN/i.test(sql) && /WHERE/i.test(sql) && results && results.length >= 1
+      }
+    ]
+  }
+];
+
+// --- APISync: Lesson Data ---
+const APISYNC_LESSONS = [
+  {
+    id: 'apisync-lesson-1',
+    title: 'REST APIの基本 — GETで一覧取得',
+    description: 'REST APIの基本を学び、GETで一覧取得・単体取得・POSTで作成まで体験する',
+    videoId: 'dQw4w9WgXcQ',
+    openApiYaml: `openapi: 3.0.0
+info:
+  title: ユーザーAPI
+  version: 1.0.0
+paths:
+  /api/users:
+    get:
+      summary: ユーザー一覧取得
+      responses:
+        '200':
+          description: 成功
+    post:
+      summary: ユーザー作成
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name: { type: string }
+      responses:
+        '201':
+          description: 作成成功
+  /api/users/{id}:
+    get:
+      summary: ユーザー1件取得
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        '200':
+          description: 成功
+        '404':
+          description: 見つからない
+`,
+    steps: [
+      {
+        id: 1,
+        title: 'GET 一覧取得',
+        instruction: 'GET メソッドで /api/users にリクエストを送り、ユーザー一覧を取得してください。レスポンスは配列で、各要素に id と name が含まれることを確認します。',
+        hint: 'メソッドを GET、パスを /api/users に設定して送信',
+        videoTimestamp: 0,
+        expectedRequest: { method: 'GET', path: '/api/users' },
+        mockResponse: { status: 200, body: [{ id: 1, name: '田中太郎' }, { id: 2, name: '佐藤花子' }, { id: 3, name: '鈴木一郎' }] },
+        validate: (response) => {
+          if (!response || response.status !== 200) return false;
+          const b = response.body;
+          return Array.isArray(b) && b.length > 0 && b.every(item => item && 'id' in item && 'name' in item);
+        }
+      },
+      {
+        id: 2,
+        title: 'GET 単体取得',
+        instruction: 'GET メソッドで /api/users/1 にリクエストを送り、id=1 のユーザー1件を取得してください。レスポンスはオブジェクトで id と name を含むことを確認します。',
+        hint: 'パスを /api/users/1 に設定して送信',
+        videoTimestamp: 60,
+        expectedRequest: { method: 'GET', path: '/api/users/1' },
+        mockResponse: { status: 200, body: { id: 1, name: '田中太郎' } },
+        validate: (response) => {
+          if (!response || response.status !== 200) return false;
+          const b = response.body;
+          return b && typeof b === 'object' && !Array.isArray(b) && 'id' in b && 'name' in b;
+        }
+      },
+      {
+        id: 3,
+        title: 'POST 作成',
+        instruction: 'POST メソッドで /api/users に、JSONボディに name を含むリクエストを送り、ユーザーを作成してください。レスポンスは 201 で作成されたオブジェクトが返ることを確認します。',
+        hint: 'メソッド POST、パス /api/users、Body に {"name": "新しいユーザー"} など',
+        videoTimestamp: 120,
+        expectedRequest: { method: 'POST', path: '/api/users', bodySchema: ['name'] },
+        mockResponse: { status: 201, body: { id: 4, name: '新しいユーザー' } },
+        validate: (response) => response && response.status === 201 && response.body && 'id' in response.body && 'name' in response.body
+      },
+      {
+        id: 4,
+        title: 'エラーハンドリング（404）',
+        instruction: '存在しない ID で GET /api/users/999 を送信し、404 とエラー構造が返ることを確認してください。',
+        hint: 'パスを /api/users/999 に設定して送信',
+        videoTimestamp: 180,
+        expectedRequest: { method: 'GET', path: '/api/users/999' },
+        mockResponse: { status: 404, body: { error: 'Not Found', message: 'User 999 not found' } },
+        validate: (response) => response && response.status === 404 && response.body && 'error' in response.body
+      }
+    ]
+  },
+  {
+    id: 'apisync-lesson-2',
+    title: 'クエリパラメータ・PUT/DELETE',
+    description: 'クエリパラメータでのフィルタ、更新（PUT）、削除（DELETE）を学ぶ',
+    videoId: 'dQw4w9WgXcQ',
+    openApiYaml: `openapi: 3.0.0
+info:
+  title: ユーザーAPI（拡張）
+  version: 1.0.0
+paths:
+  /api/users:
+    get:
+      summary: ユーザー一覧（クエリパラメータ対応）
+      parameters:
+        - name: limit
+          in: query
+          schema: { type: integer }
+        - name: department
+          in: query
+          schema: { type: string }
+      responses:
+        '200':
+          description: 成功
+  /api/users/{id}:
+    put:
+      summary: ユーザー更新
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name: { type: string }
+      responses:
+        '200':
+          description: 成功
+    delete:
+      summary: ユーザー削除
+      responses:
+        '200':
+          description: 削除成功
+`,
+    steps: [
+      {
+        id: 1,
+        title: 'クエリパラメータ（limit）',
+        instruction: 'GET /api/users にクエリパラメータ limit=2 を付けて、最大2件だけ取得してください。パスは /api/users?limit=2 です。',
+        hint: 'パスに ?limit=2 を付けて送信',
+        videoTimestamp: 0,
+        expectedRequest: { method: 'GET', path: '/api/users?limit=2' },
+        mockResponse: { status: 200, body: [{ id: 1, name: '田中太郎' }, { id: 2, name: '佐藤花子' }] },
+        validate: (response) => {
+          if (!response || response.status !== 200) return false;
+          const b = response.body;
+          return Array.isArray(b) && b.length === 2 && b.every(item => item && 'id' in item && 'name' in item);
+        }
+      },
+      {
+        id: 2,
+        title: 'PUT で更新',
+        instruction: 'PUT メソッドで /api/users/1 にリクエストを送り、ユーザー名を更新してください。Body に name を含めて送信します。',
+        hint: 'メソッド PUT、パス /api/users/1、Body に {"name": "田中太郎（更新）"} など',
+        videoTimestamp: 60,
+        expectedRequest: { method: 'PUT', path: '/api/users/1', bodySchema: ['name'] },
+        mockResponse: { status: 200, body: { id: 1, name: '田中太郎（更新）' } },
+        validate: (response) => response && response.status === 200 && response.body && 'id' in response.body && 'name' in response.body
+      },
+      {
+        id: 3,
+        title: 'DELETE で削除',
+        instruction: 'DELETE メソッドで /api/users/2 にリクエストを送り、ユーザーを削除してください。レスポンスは 200 で削除結果が返ります。',
+        hint: 'メソッドを DELETE、パスを /api/users/2 に設定して送信',
+        videoTimestamp: 120,
+        expectedRequest: { method: 'DELETE', path: '/api/users/2' },
+        mockResponse: { status: 200, body: { deleted: true, id: 2 } },
+        validate: (response) => response && response.status === 200 && response.body && (response.body.deleted === true || response.body.id === 2)
+      }
+    ]
+  }
+];
+
+// ============================================================
+// Application State
+// ============================================================
+const STORAGE_KEY = 'movidrill-completed-steps';
+
+const state = {
+  currentView: 'dashboard', // 'dashboard' | 'querysync-lessons' | 'apisync-lessons' | 'lesson'
+  currentModule: null,
+  currentLesson: null,
+  currentStep: 0,
+  completedSteps: (() => {
+    try {
+      const s = localStorage.getItem(STORAGE_KEY);
+      return s ? JSON.parse(s) : [];
+    } catch (_) { return []; }
+  })(),
+  db: null,
+  queryResults: null,
+  queryColumns: null,
+  feedback: null,
+  showHint: false,
+  apiResponse: null,
+  lastRequest: null,
+  apiYaml: ''
+};
+
+function persistCompletedSteps() {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(state.completedSteps));
+  } catch (_) {}
+}
+
+// ============================================================
+// Database Engine (sql.js)
+// ============================================================
+async function initDatabase(lesson) {
+  const SQL = await initSqlJs({
+    locateFile: file => `https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.8.0/${file}`
+  });
+  state.db = new SQL.Database();
+
+  // Create tables and insert data
+  for (const [tableName, table] of Object.entries(lesson.tables)) {
+    const colDefs = table.columns.map(c => `${c.name} ${c.type}`).join(', ');
+    state.db.run(`CREATE TABLE ${tableName} (${colDefs})`);
+
+    const placeholders = table.columns.map(() => '?').join(', ');
+    const stmt = state.db.prepare(`INSERT INTO ${tableName} VALUES (${placeholders})`);
+    for (const row of table.data) {
+      stmt.bind(row);
+      stmt.step();
+      stmt.reset();
+    }
+    stmt.free();
+  }
+}
+
+function executeQuery(sql) {
+  try {
+    const results = state.db.exec(sql);
+    if (results.length === 0) return { columns: [], values: [], error: null };
+    return { columns: results[0].columns, values: results[0].values, error: null };
+  } catch (e) {
+    return { columns: [], values: [], error: e.message };
+  }
+}
+
+// ============================================================
+// Renderers
+// ============================================================
+
+function renderSidebar() {
+  const sidebar = document.getElementById('sidebar');
+  let html = '<div class="sidebar-section-label">モジュール</div>';
+
+  MODULE_REGISTRY.forEach(mod => {
+    const isActive = state.currentModule === mod.id;
+    const isDisabled = mod.status === 'coming';
+    const cls = `sidebar-item ${isActive ? 'active' : ''} ${isDisabled ? 'disabled' : ''}`;
+
+    html += `
+      <div class="${cls}" onclick="${isDisabled ? '' : `navigateToModule('${mod.id}')`}">
+        <div class="sidebar-item-icon" style="background:${mod.bgColor}; color:${mod.color}">
+          ${mod.icon}
+        </div>
+        <div class="sidebar-item-text">
+          <div class="sidebar-item-name">${mod.name}</div>
+          <div class="sidebar-item-desc">${mod.subtitle}</div>
+        </div>
+        ${isDisabled ? '<span class="coming-soon">SOON</span>' : ''}
+      </div>
+    `;
+  });
+
+  html += '<div class="sidebar-section-label" style="margin-top:20px">全般</div>';
+  html += `
+    <div class="sidebar-item" onclick="navigateToDashboard()">
+      <div class="sidebar-item-icon" style="background:var(--bg-tertiary)">📊</div>
+      <div class="sidebar-item-text">
+        <div class="sidebar-item-name">ダッシュボード</div>
+        <div class="sidebar-item-desc">進捗の概要</div>
+      </div>
+    </div>
+  `;
+
+  sidebar.innerHTML = html;
+}
+
+function renderQuerySyncLessons() {
+  const main = document.getElementById('main-content');
+  const mod = MODULE_REGISTRY.find(m => m.id === 'querysync');
+  const lessons = QUERYSYNC_LESSONS;
+  const lessonCards = lessons.map(lesson => {
+    const completed = lesson.steps.filter(s => state.completedSteps.includes(`${lesson.id}-${s.id}`)).length;
+    const total = lesson.steps.length;
+    const progress = total ? Math.round((completed / total) * 100) : 0;
+    const isComplete = completed === total && total > 0;
+    return `
+      <div class="module-card" style="--card-accent: ${mod.color}" onclick="startLesson('${lesson.id}')">
+        <div class="module-card-icon" style="background:${mod.bgColor}; color:${mod.color}">🗄️</div>
+        <div class="module-card-title">${lesson.title}</div>
+        <div class="module-card-desc">${lesson.description}</div>
+        <div class="module-card-footer">
+          <span class="module-card-tag" style="background:${mod.bgColor}; color:${mod.color}">
+            ${completed} / ${total} ステップ
+          </span>
+          ${isComplete ? '<span style="color:var(--accent-green);font-size:12px;">✓ 完了</span>' : ''}
+        </div>
+        <div style="margin-top:12px;height:4px;background:var(--bg-tertiary);border-radius:2px;overflow:hidden;">
+          <div style="height:100%;width:${progress}%;background:var(--accent-cyan);border-radius:2px;transition:width 0.3s;"></div>
+        </div>
+      </div>
+    `;
+  });
+
+  main.innerHTML = `
+    <div class="dashboard">
+      <div style="display:flex;align-items:center;gap:16px;margin-bottom:24px;">
+        <button class="btn-back" onclick="navigateToDashboard()">← ダッシュボード</button>
+        <div>
+          <h1 style="margin-bottom:0;">${mod.icon} <span>QuerySync</span></h1>
+          <p class="dashboard-sub" style="margin-bottom:0;">SQL動画×インタラクティブエディタ。動画と連動してクエリを書き、即座にフィードバック。</p>
+        </div>
+      </div>
+      <div class="sidebar-section-label" style="padding-left:0; margin-bottom:16px;">レッスン一覧</div>
+      <div class="module-grid">
+        ${lessonCards.join('')}
+      </div>
+    </div>
+  `;
+}
+
+function renderAPISyncLessons() {
+  const main = document.getElementById('main-content');
+  const mod = MODULE_REGISTRY.find(m => m.id === 'apisync');
+  const lessons = APISYNC_LESSONS;
+  const lessonCards = lessons.map(lesson => {
+    const completed = lesson.steps.filter(s => state.completedSteps.includes(`${lesson.id}-${s.id}`)).length;
+    const total = lesson.steps.length;
+    const progress = total ? Math.round((completed / total) * 100) : 0;
+    const isComplete = completed === total && total > 0;
+    return `
+      <div class="module-card" style="--card-accent: ${mod.color}" onclick="startLesson('${lesson.id}')">
+        <div class="module-card-icon" style="background:${mod.bgColor}; color:${mod.color}">${mod.icon}</div>
+        <div class="module-card-title">${lesson.title}</div>
+        <div class="module-card-desc">${lesson.description}</div>
+        <div class="module-card-footer">
+          <span class="module-card-tag" style="background:${mod.bgColor}; color:${mod.color}">
+            ${completed} / ${total} ステップ
+          </span>
+          ${isComplete ? '<span style="color:var(--accent-green);font-size:12px;">✓ 完了</span>' : ''}
+        </div>
+        <div style="margin-top:12px;height:4px;background:var(--bg-tertiary);border-radius:2px;overflow:hidden;">
+          <div style="height:100%;width:${progress}%;background:var(--accent-amber);border-radius:2px;transition:width 0.3s;"></div>
+        </div>
+      </div>
+    `;
+  });
+
+  main.innerHTML = `
+    <div class="dashboard">
+      <div style="display:flex;align-items:center;gap:16px;margin-bottom:24px;">
+        <button class="btn-back" onclick="navigateToDashboard()">← ダッシュボード</button>
+        <div>
+          <h1 style="margin-bottom:0;">${mod.icon} <span>APISync</span></h1>
+          <p class="dashboard-sub" style="margin-bottom:0;">${mod.description}</p>
+        </div>
+      </div>
+      <div class="sidebar-section-label" style="padding-left:0; margin-bottom:16px;">レッスン一覧</div>
+      <div class="module-grid">
+        ${lessonCards.join('')}
+      </div>
+    </div>
+  `;
+}
+
+function renderDashboard() {
+  const main = document.getElementById('main-content');
+  const activeModules = MODULE_REGISTRY.filter(m => m.status === 'active').length;
+  const totalModules = MODULE_REGISTRY.length;
+
+  let moduleCards = MODULE_REGISTRY.map(mod => `
+    <div class="module-card ${mod.status === 'coming' ? 'disabled' : ''}"
+         style="--card-accent: ${mod.color}"
+         onclick="${mod.status === 'active' ? `navigateToModule('${mod.id}')` : ''}">
+      <div class="module-card-icon" style="background:${mod.bgColor}; color:${mod.color}">
+        ${mod.icon}
+      </div>
+      <div class="module-card-title">${mod.name}</div>
+      <div class="module-card-desc">${mod.description}</div>
+      <div class="module-card-footer">
+        <span class="module-card-tag" style="background:${mod.bgColor}; color:${mod.color}">
+          ${mod.difficulty}
+        </span>
+        <span style="font-family:var(--font-mono); font-size:11px; color:var(--text-dim)">
+          ${mod.status === 'active' ? mod.lessons + ' lessons' : 'Coming Soon'}
+        </span>
+      </div>
+    </div>
+  `).join('');
+
+  main.innerHTML = `
+    <div class="dashboard">
+      <h1>Welcome to <span>Movidrill</span></h1>
+      <p class="dashboard-sub">動画を"観る"から"手を動かして身につける"へ。IT技術のインタラクティブ学習プラットフォーム</p>
+      
+      <div class="stats-row">
+        <div class="stat-card">
+          <div class="stat-label">利用可能モジュール</div>
+          <div class="stat-value" style="color:var(--accent-cyan)">${activeModules}<span style="font-size:16px;color:var(--text-dim)"> / ${totalModules}</span></div>
+          <div class="stat-sub">他${totalModules - activeModules}モジュールは開発中</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">学習済みステップ</div>
+          <div class="stat-value" style="color:var(--accent-green)">${state.completedSteps.length}</div>
+          <div class="stat-sub">継続は力なり</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">総学習時間</div>
+          <div class="stat-value" style="color:var(--accent-amber)">0<span style="font-size:16px;color:var(--text-dim)"> min</span></div>
+          <div class="stat-sub">今日から始めよう</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">正答率</div>
+          <div class="stat-value" style="color:var(--accent-purple)">-<span style="font-size:16px;color:var(--text-dim)"> %</span></div>
+          <div class="stat-sub">データ収集中</div>
+        </div>
+      </div>
+
+      <div class="sidebar-section-label" style="padding-left:0; margin-bottom:16px; font-size:12px;">
+        全モジュール
+      </div>
+      <div class="module-grid">
+        ${moduleCards}
+      </div>
+    </div>
+  `;
+}
+
+function renderLesson() {
+  const main = document.getElementById('main-content');
+  const lesson = state.currentLesson;
+  const step = lesson.steps[state.currentStep];
+  const mod = MODULE_REGISTRY.find(m => m.id === state.currentModule);
+
+  // --- APISync: 専用レッスン画面 ---
+  if (state.currentModule === 'apisync') {
+    let stepIndicator = '';
+    lesson.steps.forEach((s, i) => {
+      const isCompleted = state.completedSteps.includes(`${lesson.id}-${s.id}`);
+      const isCurrent = i === state.currentStep;
+      const cls = isCompleted ? 'completed' : (isCurrent ? 'active' : '');
+      if (i > 0) stepIndicator += `<div class="step-line ${isCompleted || isCurrent ? 'completed' : ''}"></div>`;
+      stepIndicator += `<div class="step-dot ${cls}">${isCompleted ? '✓' : s.id}</div>`;
+    });
+
+    const req = step.expectedRequest || {};
+    const apiSpecHtml = `
+      <div class="api-spec-card">
+        <div class="api-spec-row"><span class="api-spec-label">メソッド</span><code>${req.method || '-'}</code></div>
+        <div class="api-spec-row"><span class="api-spec-label">パス</span><code>${req.path || '-'}</code></div>
+        <div class="api-spec-row"><span class="api-spec-label">期待レスポンス</span><span>${step.mockResponse ? step.mockResponse.status + ' ' + (Array.isArray(step.mockResponse.body) ? '配列' : 'オブジェクト') : '-'}</span></div>
+      </div>`;
+
+    let responseHtml = '<div style="padding:40px;text-align:center;color:var(--text-dim);font-size:13px;">送信するとレスポンスがここに表示されます</div>';
+    if (state.apiResponse) {
+      const status = state.apiResponse.status;
+      const bodyStr = typeof state.apiResponse.body === 'object'
+        ? JSON.stringify(state.apiResponse.body, null, 2)
+        : String(state.apiResponse.body);
+      responseHtml = `
+        <div class="api-response-status">${status}</div>
+        <pre class="api-response-body">${bodyStr.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</pre>`;
+    }
+
+    let feedbackHtml = '';
+    if (state.feedback) {
+      feedbackHtml = `<div class="feedback ${state.feedback.type}">
+        ${state.feedback.type === 'success' ? '✅' : state.feedback.type === 'error' ? '❌' : 'ℹ️'}
+        <span>${state.feedback.message}</span>
+        ${state.feedback.type === 'success' && state.currentStep < lesson.steps.length - 1
+          ? `<button class="btn btn-success" onclick="nextStep()" style="margin-left:auto;">次のステップへ →</button>`
+          : ''}
+        ${state.feedback.type === 'success' && state.currentStep === lesson.steps.length - 1
+          ? `<span style="margin-left:auto;font-weight:600;">🎉 レッスン完了！</span><button class="btn btn-secondary" onclick="navigateToAPISyncLessons()" style="margin-left:8px;">レッスン一覧に戻る</button>`
+          : ''}
+      </div>`;
+    }
+
+    main.innerHTML = `
+    <div class="lesson-view">
+      <div class="lesson-header">
+        <div class="lesson-header-left">
+          <button class="btn-back" onclick="navigateToAPISyncLessons()">← APISyncに戻る</button>
+          <div class="lesson-title-area">
+            <h2>${mod.icon} ${lesson.title}</h2>
+            <p>Step ${state.currentStep + 1} / ${lesson.steps.length} — ${step.title}</p>
+          </div>
+        </div>
+        <div class="step-indicator">${stepIndicator}</div>
+      </div>
+      <div class="video-panel">
+        <div class="video-container">
+          ${lesson.videoId
+            ? `<iframe src="https://www.youtube.com/embed/${lesson.videoId}?start=${step.videoTimestamp}" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>`
+            : `<div class="video-placeholder"><div class="video-placeholder-icon">▶️</div><div class="video-placeholder-text">動画IDを設定するとここにYouTubeが表示されます</div></div>`
+          }
+        </div>
+        <div class="info-panel">
+          <div class="info-section">
+            <div class="info-section-title">課題</div>
+            <div class="task-card">
+              <h4>📝 ${step.title}</h4>
+              <p>${step.instruction}</p>
+              ${state.showHint ? `<div class="task-hint">💡 ヒント: ${step.hint}</div>` :
+                `<div style="margin-top:10px"><button class="btn btn-secondary" onclick="toggleHint()" style="font-size:11px;padding:5px 12px;">💡 ヒントを表示</button></div>`
+              }
+            </div>
+          </div>
+          <div class="info-section">
+            <div class="info-section-title">API仕様（このステップ）</div>
+            ${apiSpecHtml}
+          </div>
+        </div>
+      </div>
+      <div class="editor-panel">
+        <div class="editor-toolbar">
+          <div class="editor-toolbar-left"><div class="editor-toolbar-dot"></div>OpenAPI YAML</div>
+          <span style="font-family:var(--font-mono);font-size:11px;color:var(--text-dim)">編集可能</span>
+        </div>
+        <div class="editor-area">
+          <textarea class="api-yaml-editor sql-editor" id="api-yaml-editor" spellcheck="false" placeholder="OpenAPI 3.0 YAML..."></textarea>
+        </div>
+        <div class="api-request-form">
+          <div class="api-request-row">
+            <select id="api-method"></select>
+            <input type="text" id="api-path" class="api-path-input" placeholder="/api/users">
+          </div>
+          <div class="api-request-row api-body-row">
+            <label class="api-body-label">Body (JSON)</label>
+            <textarea id="api-body" class="api-body-input" placeholder='{"name": "例"}' spellcheck="false"></textarea>
+          </div>
+        </div>
+        <div class="editor-actions">
+          <button class="btn btn-primary" onclick="sendAPISyncRequest()">▶ 送信</button>
+          <button class="btn btn-secondary" onclick="checkAPISyncAnswer()">✔ 回答を判定</button>
+        </div>
+        <div class="results-panel">
+          <div class="results-header"><span>📋 レスポンス</span></div>
+          ${responseHtml}
+        </div>
+        ${feedbackHtml}
+      </div>
+    </div>`;
+
+    const yamlEl = document.getElementById('api-yaml-editor');
+    if (yamlEl) yamlEl.value = state.apiYaml || lesson.openApiYaml || '';
+    const methodEl = document.getElementById('api-method');
+    if (methodEl) {
+      ['GET', 'POST', 'PUT', 'DELETE'].forEach(m => { methodEl.innerHTML += `<option value="${m}">${m}</option>`; });
+      const preferred = state.lastRequest ? state.lastRequest.method : (step.expectedRequest && step.expectedRequest.method) || 'GET';
+      methodEl.value = preferred;
+    }
+    const pathEl = document.getElementById('api-path');
+    if (pathEl) pathEl.value = state.lastRequest ? state.lastRequest.path : (step.expectedRequest && step.expectedRequest.path) || '';
+    const bodyEl = document.getElementById('api-body');
+    if (bodyEl) bodyEl.value = state.lastRequest && state.lastRequest.body ? state.lastRequest.body : '';
+    return;
+  }
+
+  // --- QuerySync: 以下従来のレッスン画面 ---
+  // Step indicator
+  let stepIndicator = '';
+  lesson.steps.forEach((s, i) => {
+    const isCompleted = state.completedSteps.includes(`${lesson.id}-${s.id}`);
+    const isCurrent = i === state.currentStep;
+    const cls = isCompleted ? 'completed' : (isCurrent ? 'active' : '');
+    
+    if (i > 0) {
+      stepIndicator += `<div class="step-line ${isCompleted || isCurrent ? 'completed' : ''}"></div>`;
+    }
+    stepIndicator += `<div class="step-dot ${cls}">${isCompleted ? '✓' : s.id}</div>`;
+  });
+
+  // ER Diagram
+  let erHtml = '';
+  for (const [, table] of Object.entries(lesson.tables)) {
+    erHtml += `<div class="er-table">
+      <div class="er-table-header">📋 ${table.name}</div>`;
+    table.columns.forEach(col => {
+      erHtml += `<div class="er-table-row">
+        <span class="er-col-name">${col.pk ? '<span class="er-pk">🔑</span> ' : ''}${col.name}</span>
+        <span class="er-col-type">${col.type}</span>
+      </div>`;
+    });
+    erHtml += '</div>';
+  }
+
+  // Results table
+  let resultsHtml = '';
+  if (state.queryResults) {
+    if (state.queryResults.error) {
+      resultsHtml = `
+        <div class="feedback error">
+          ❌ <span>${state.queryResults.error}</span>
+        </div>`;
+    } else if (state.queryResults.values.length > 0) {
+      let tableHtml = '<table class="results-table"><thead><tr>';
+      state.queryResults.columns.forEach(c => { tableHtml += `<th>${c}</th>`; });
+      tableHtml += '</tr></thead><tbody>';
+      state.queryResults.values.forEach(row => {
+        tableHtml += '<tr>';
+        row.forEach(val => { tableHtml += `<td>${val !== null ? val : 'NULL'}</td>`; });
+        tableHtml += '</tr>';
+      });
+      tableHtml += '</tbody></table>';
+      resultsHtml = tableHtml;
+    } else {
+      resultsHtml = '<div style="padding:20px;color:var(--text-dim);text-align:center;font-size:13px;">結果なし（0行）</div>';
+    }
+  }
+
+  // Feedback
+  let feedbackHtml = '';
+  if (state.feedback) {
+    feedbackHtml = `<div class="feedback ${state.feedback.type}">
+      ${state.feedback.type === 'success' ? '✅' : state.feedback.type === 'error' ? '❌' : 'ℹ️'}
+      <span>${state.feedback.message}</span>
+      ${state.feedback.type === 'success' && state.currentStep < lesson.steps.length - 1
+        ? `<button class="btn btn-success" onclick="nextStep()" style="margin-left:auto;">次のステップへ →</button>`
+        : ''}
+      ${state.feedback.type === 'success' && state.currentStep === lesson.steps.length - 1
+        ? `<span style="margin-left:auto;font-weight:600;">🎉 レッスン完了！</span><button class="btn btn-secondary" onclick="navigateToQuerySyncLessons()" style="margin-left:8px;">レッスン一覧に戻る</button>`
+        : ''}
+    </div>`;
+  }
+
+  main.innerHTML = `
+    <div class="lesson-view">
+      <div class="lesson-header">
+        <div class="lesson-header-left">
+          <button class="btn-back" onclick="navigateToQuerySyncLessons()">← QuerySyncに戻る</button>
+          <div class="lesson-title-area">
+            <h2>${mod.icon} ${lesson.title}</h2>
+            <p>Step ${state.currentStep + 1} / ${lesson.steps.length} — ${step.title}</p>
+          </div>
+        </div>
+        <div class="step-indicator">
+          ${stepIndicator}
+        </div>
+      </div>
+
+      <!-- Left: Video + Info -->
+      <div class="video-panel">
+        <div class="video-container">
+          ${lesson.videoId
+            ? `<iframe src="https://www.youtube.com/embed/${lesson.videoId}?start=${step.videoTimestamp}" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>`
+            : `<div class="video-placeholder">
+                <div class="video-placeholder-icon">▶️</div>
+                <div class="video-placeholder-text">動画IDを設定するとここにYouTubeが表示されます</div>
+              </div>`
+          }
+        </div>
+        <div class="info-panel">
+          <div class="info-section">
+            <div class="info-section-title">課題</div>
+            <div class="task-card">
+              <h4>📝 ${step.title}</h4>
+              <p>${step.instruction}</p>
+              ${state.showHint ? `<div class="task-hint">💡 ヒント: ${step.hint}</div>` : 
+                `<div style="margin-top:10px">
+                  <button class="btn btn-secondary" onclick="toggleHint()" style="font-size:11px;padding:5px 12px;">
+                    💡 ヒントを表示
+                  </button>
+                </div>`
+              }
+            </div>
+          </div>
+          <div class="info-section">
+            <div class="info-section-title">テーブル構造（ER図）</div>
+            <div class="er-diagram">
+              ${erHtml}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Right: Editor + Results -->
+      <div class="editor-panel">
+        <div class="editor-toolbar">
+          <div class="editor-toolbar-left">
+            <div class="editor-toolbar-dot"></div>
+            SQL Editor
+          </div>
+          <span style="font-family:var(--font-mono);font-size:11px;color:var(--text-dim)">
+            sql.js (ブラウザ内実行)
+          </span>
+        </div>
+        <div class="editor-area">
+          <textarea class="sql-editor" id="sql-editor"
+            placeholder="ここにSQLクエリを入力してください...&#10;&#10;例: SELECT * FROM employees"
+            spellcheck="false"
+          ></textarea>
+        </div>
+        <div class="editor-actions">
+          <button class="btn btn-primary" onclick="runQuery()">▶ 実行 (Ctrl+Enter)</button>
+          <button class="btn btn-secondary" onclick="clearEditor()">クリア</button>
+          <button class="btn btn-secondary" onclick="checkAnswer()">✔ 回答を判定</button>
+        </div>
+        <div class="results-panel">
+          <div class="results-header">
+            <span>📋 実行結果</span>
+            <span>${state.queryResults && !state.queryResults.error ? state.queryResults.values.length + ' rows' : ''}</span>
+          </div>
+          ${resultsHtml || '<div style="padding:40px;text-align:center;color:var(--text-dim);font-size:13px;">クエリを実行すると結果がここに表示されます</div>'}
+          <div class="expected-panel">
+            <div class="expected-header">期待する結果</div>
+            <div style="padding:12px;font-size:13px;color:var(--text-secondary);">
+              ${step.expectedSummary || ''}
+            </div>
+            <div style="padding:0 12px 12px;">
+              <code style="font-family:var(--font-mono);font-size:11px;color:var(--accent-cyan);background:var(--bg-primary);padding:6px 10px;border-radius:4px;display:block;overflow-x:auto;">${step.expectedQuery || ''}</code>
+            </div>
+          </div>
+        </div>
+        ${feedbackHtml}
+      </div>
+    </div>
+  `;
+
+  // Keyboard shortcut
+  const editor = document.getElementById('sql-editor');
+  editor.addEventListener('keydown', (e) => {
+    if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+      e.preventDefault();
+      runQuery();
+    }
+    // Tab key support
+    if (e.key === 'Tab') {
+      e.preventDefault();
+      const start = editor.selectionStart;
+      const end = editor.selectionEnd;
+      editor.value = editor.value.substring(0, start) + '  ' + editor.value.substring(end);
+      editor.selectionStart = editor.selectionEnd = start + 2;
+    }
+  });
+}
+
+// ============================================================
+// Actions
+// ============================================================
+
+function navigateToDashboard() {
+  state.currentView = 'dashboard';
+  state.currentModule = null;
+  state.currentLesson = null;
+  state.queryResults = null;
+  state.feedback = null;
+  state.showHint = false;
+  renderSidebar();
+  renderDashboard();
+}
+
+function navigateToQuerySyncLessons() {
+  state.currentView = 'querysync-lessons';
+  state.currentModule = 'querysync';
+  state.currentLesson = null;
+  state.queryResults = null;
+  state.feedback = null;
+  renderSidebar();
+  renderQuerySyncLessons();
+}
+
+async function navigateToModule(moduleId) {
+  if (moduleId === 'querysync') {
+    state.currentView = 'querysync-lessons';
+    state.currentModule = moduleId;
+    state.currentLesson = null;
+    state.queryResults = null;
+    state.feedback = null;
+    renderSidebar();
+    renderQuerySyncLessons();
+    return;
+  }
+  if (moduleId === 'apisync') {
+    state.currentView = 'apisync-lessons';
+    state.currentModule = moduleId;
+    state.currentLesson = null;
+    state.apiResponse = null;
+    state.lastRequest = null;
+    state.feedback = null;
+    renderSidebar();
+    renderAPISyncLessons();
+  }
+}
+
+function navigateToAPISyncLessons() {
+  state.currentView = 'apisync-lessons';
+  state.currentModule = 'apisync';
+  state.currentLesson = null;
+  state.apiResponse = null;
+  state.lastRequest = null;
+  state.feedback = null;
+  renderSidebar();
+  renderAPISyncLessons();
+}
+
+async function startLesson(lessonId) {
+  const apisyncLesson = APISYNC_LESSONS.find(l => l.id === lessonId);
+  if (apisyncLesson) {
+    state.currentView = 'lesson';
+    state.currentModule = 'apisync';
+    state.currentLesson = apisyncLesson;
+    state.currentStep = 0;
+    state.apiResponse = null;
+    state.lastRequest = null;
+    state.apiYaml = apisyncLesson.openApiYaml || '';
+    state.feedback = null;
+    state.showHint = false;
+    renderSidebar();
+    renderLesson();
+    return;
+  }
+  const lesson = QUERYSYNC_LESSONS.find(l => l.id === lessonId);
+  if (!lesson) return;
+  state.currentView = 'lesson';
+  state.currentModule = 'querysync';
+  state.currentLesson = lesson;
+  state.currentStep = 0;
+  state.queryResults = null;
+  state.feedback = null;
+  state.showHint = false;
+  await initDatabase(lesson);
+  renderSidebar();
+  renderLesson();
+}
+
+function runQuery() {
+  const editor = document.getElementById('sql-editor');
+  const sql = editor.value.trim();
+  if (!sql) return;
+  
+  const result = executeQuery(sql);
+  state.queryResults = result;
+  state.feedback = null;
+  renderLesson();
+
+  // Restore query in editor
+  document.getElementById('sql-editor').value = sql;
+}
+
+function checkAnswer() {
+  const editor = document.getElementById('sql-editor');
+  const sql = editor.value.trim();
+  if (!sql) {
+    state.feedback = { type: 'info', message: 'クエリを入力してから判定してください。' };
+    renderLesson();
+    return;
+  }
+
+  // Execute first
+  const result = executeQuery(sql);
+  state.queryResults = result;
+
+  if (result.error) {
+    state.feedback = { type: 'error', message: `SQLエラーが発生しました: ${result.error}` };
+    renderLesson();
+    document.getElementById('sql-editor').value = sql;
+    return;
+  }
+
+  const step = state.currentLesson.steps[state.currentStep];
+  const isCorrect = step.validate(result.values, result.columns, sql);
+
+  if (isCorrect) {
+    state.completedSteps.push(`${state.currentLesson.id}-${step.id}`);
+    persistCompletedSteps();
+    state.feedback = { type: 'success', message: `正解です！「${step.title}」をクリアしました。` };
+  } else {
+    state.feedback = { type: 'error', message: '結果が期待値と一致しません。クエリを見直してみてください。' };
+  }
+
+  renderLesson();
+  document.getElementById('sql-editor').value = sql;
+}
+
+function nextStep() {
+  if (state.currentStep < state.currentLesson.steps.length - 1) {
+    if (state.currentModule === 'apisync') {
+      const yamlEl = document.getElementById('api-yaml-editor');
+      if (yamlEl) state.apiYaml = yamlEl.value;
+      state.apiResponse = null;
+      state.lastRequest = null;
+    }
+    state.currentStep++;
+    state.queryResults = null;
+    state.feedback = null;
+    state.showHint = false;
+    renderLesson();
+  }
+}
+
+function saveAPISyncEditorState() {
+  const yamlEl = document.getElementById('api-yaml-editor');
+  if (yamlEl) state.apiYaml = yamlEl.value;
+}
+
+function sendAPISyncRequest() {
+  saveAPISyncEditorState();
+  const method = (document.getElementById('api-method') || {}).value || 'GET';
+  const path = (document.getElementById('api-path') || {}).value.trim() || '';
+  let bodyStr = (document.getElementById('api-body') || {}).value.trim() || '';
+  state.lastRequest = { method, path, body: bodyStr };
+
+  const step = state.currentLesson.steps[state.currentStep];
+  const expected = step.expectedRequest || {};
+  let match = method === (expected.method || 'GET') && path === (expected.path || '');
+  if (match && expected.bodySchema && bodyStr) {
+    try {
+      const parsed = JSON.parse(bodyStr);
+      match = expected.bodySchema.every(key => key in parsed);
+    } catch (_) { match = false; }
+  }
+  if (match) {
+    state.apiResponse = { status: step.mockResponse.status, body: step.mockResponse.body };
+  } else {
+    state.apiResponse = { status: 400, body: { error: 'Bad Request', message: 'リクエストが期待と一致しません。メソッド・パス・Bodyを確認してください。' } };
+  }
+  state.feedback = null;
+  renderLesson();
+}
+
+function checkAPISyncAnswer() {
+  saveAPISyncEditorState();
+  if (!state.apiResponse) {
+    state.feedback = { type: 'info', message: '先に「送信」してレスポンスを取得してください。' };
+    renderLesson();
+    return;
+  }
+  const step = state.currentLesson.steps[state.currentStep];
+  const isCorrect = step.validate(state.apiResponse, state.lastRequest);
+  if (isCorrect) {
+    state.completedSteps.push(`${state.currentLesson.id}-${step.id}`);
+    persistCompletedSteps();
+    state.feedback = { type: 'success', message: `正解です！「${step.title}」をクリアしました。` };
+  } else {
+    state.feedback = { type: 'error', message: 'レスポンスが期待値と一致しません。リクエストを見直してください。' };
+  }
+  renderLesson();
+}
+
+function clearEditor() {
+  state.queryResults = null;
+  state.feedback = null;
+  renderLesson();
+}
+
+function toggleHint() {
+  if (state.currentModule === 'apisync') saveAPISyncEditorState();
+  state.showHint = !state.showHint;
+  const sql = document.getElementById('sql-editor')?.value || '';
+  renderLesson();
+  if (sql) document.getElementById('sql-editor').value = sql;
+}
+
+// ============================================================
+// Boot
+// ============================================================
+renderSidebar();
+renderDashboard();
+</script>
+
+</body>
+</html>
