@@ -1014,8 +1014,8 @@ const QUERYSYNC_LESSONS = [
           [4, '人事部']
         ]
       },
-      staff: {
-        name: 'staff',
+      employees: {
+        name: 'employees',
         columns: [
           { name: 'id', type: 'INTEGER', pk: true },
           { name: 'name', type: 'TEXT' },
@@ -1033,64 +1033,62 @@ const QUERYSYNC_LESSONS = [
           [7, '山本直樹', 3, 490000, '2020-09-12'],
           [8, '中村恵子', 4, 520000, '2017-04-01']
         ]
+      },
+      projects: {
+        name: 'projects',
+        columns: [
+          { name: 'id', type: 'INTEGER', pk: true },
+          { name: 'name', type: 'TEXT' },
+          { name: 'department_id', type: 'INTEGER' }
+        ],
+        data: [
+          [1, '新システム開発', 1],
+          [2, '営業ツール刷新', 2],
+          [3, 'デザイン刷新', 3],
+          [4, '採用強化', 4]
+        ]
       }
     },
     steps: [
       {
         id: 1,
-        title: 'テーブル確認（staff）',
-        instruction: 'staffテーブルの全カラム・全行を取得してください。',
-        hint: 'SELECT * FROM staff',
+        title: 'テーブル確認（employees）',
+        instruction: 'employeesテーブルの全カラム・全行を取得してください。',
+        hint: 'SELECT * FROM employees',
         videoTimestamp: 0,
-        expectedQuery: 'SELECT * FROM staff',
+        expectedQuery: 'SELECT * FROM employees',
         expectedSummary: '8行が返ること（id, name, department_id, salary, hire_date）',
         validate: (results) => results && results.length === 8
       },
       {
         id: 2,
         title: 'INNER JOINの基本',
-        instruction: 'staff と departments を INNER JOIN し、社員名（staff.name）と部署名（departments.name）を取得してください。結合条件は staff.department_id = departments.id です。',
-        hint: 'SELECT staff.name, departments.name FROM staff INNER JOIN departments ON ...',
+        instruction: 'employees と departments を INNER JOIN し、社員名（employees.name）と部署名（departments.name）を取得してください。結合条件は employees.department_id = departments.id です。',
+        hint: 'SELECT employees.name, departments.name FROM employees INNER JOIN departments ON ...',
         videoTimestamp: 60,
-        expectedQuery: 'SELECT staff.name, departments.name FROM staff INNER JOIN departments ON staff.department_id = departments.id',
+        expectedQuery: 'SELECT employees.name, departments.name FROM employees INNER JOIN departments ON employees.department_id = departments.id',
         expectedSummary: '8行・社員名と部署名の2列',
         validate: (results, columns) => results && results.length === 8 && columns && columns.length === 2
       },
       {
         id: 3,
-        title: 'JOINとWHEREの組み合わせ',
-        instruction: 'INNER JOIN で「開発部」の社員の名前だけを取得してください。部署名で絞り込みます。',
-        hint: "JOIN の後に WHERE departments.name = '開発部'",
-        videoTimestamp: 120,
-        expectedQuery: "SELECT staff.name FROM staff INNER JOIN departments ON staff.department_id = departments.id WHERE departments.name = '開発部'",
-        expectedSummary: '3行・開発部の社員名のみ',
-        validate: (results) => results && results.length === 3
-      },
-      {
-        id: 4,
         title: 'LEFT JOIN',
-        instruction: 'staff を LEFT JOIN で departments と結合し、社員名と部署名を取得してください。部署に紐づかない社員も含めます。',
+        instruction: 'employees を LEFT JOIN で departments と結合し、社員名と部署名を取得してください。部署に紐づかない社員も含めます。',
         hint: 'LEFT JOIN を使うと、右側に一致がない行も残ります',
-        videoTimestamp: 180,
-        expectedQuery: 'SELECT staff.name, departments.name FROM staff LEFT JOIN departments ON staff.department_id = departments.id',
+        videoTimestamp: 120,
+        expectedQuery: 'SELECT employees.name, departments.name FROM employees LEFT JOIN departments ON employees.department_id = departments.id',
         expectedSummary: '8行・社員名と部署名（全社員が部署に紐づくので8行）',
         validate: (results, columns) => results && results.length === 8 && columns && columns.length === 2
       },
       {
-        id: 5,
-        title: 'JOIN結果のソート',
-        instruction: 'staff と departments を INNER JOIN し、社員名・部署名・給与の3列を取得し、給与の高い順に並べてください。',
-        hint: 'SELECT ... JOIN ... ORDER BY salary DESC',
-        videoTimestamp: 240,
-        expectedQuery: 'SELECT staff.name, departments.name, staff.salary FROM staff INNER JOIN departments ON staff.department_id = departments.id ORDER BY staff.salary DESC',
-        expectedSummary: '8行・給与の降順',
-        validate: (results, columns) => {
-          if (!results || results.length !== 8 || !columns || columns.length !== 3) return false;
-          for (let i = 0; i < results.length - 1; i++) {
-            if (results[i][2] < results[i + 1][2]) return false;
-          }
-          return true;
-        }
+        id: 4,
+        title: '複数テーブルの結合',
+        instruction: 'employees と departments を INNER JOIN したうえで、さらに projects を INNER JOIN してください。projects は department_id で departments と対応しています。社員名・部署名・プロジェクト名の3列を取得してください。',
+        hint: 'FROM employees INNER JOIN departments ON ... INNER JOIN projects ON departments.id = projects.department_id',
+        videoTimestamp: 180,
+        expectedQuery: 'SELECT employees.name, departments.name, projects.name FROM employees INNER JOIN departments ON employees.department_id = departments.id INNER JOIN projects ON departments.id = projects.department_id',
+        expectedSummary: '8行・社員名・部署名・プロジェクト名の3列',
+        validate: (results, columns) => results && results.length === 8 && columns && columns.length === 3
       }
     ]
   },
